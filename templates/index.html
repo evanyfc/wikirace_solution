@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WikiRace Solver</title>
+  <style>
+    /* ── Base reset & typography ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: #f5f6fa;
+      color: #222;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    header h1 {
+      font-size: 2.4rem;
+      color: #2c3e50;
+    }
+
+    header p {
+      color: #555;
+      margin-top: 0.4rem;
+      font-size: 1rem;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      padding: 2rem;
+      width: 100%;
+      max-width: 640px;
+    }
+
+    /* ── Form ── */
+    form label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 0.3rem;
+      color: #333;
+    }
+
+    form input[type="text"],
+    form input[type="number"] {
+      width: 100%;
+      padding: 0.65rem 0.9rem;
+      border: 1.5px solid #ccc;
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: border-color 0.2s;
+      margin-bottom: 1.1rem;
+    }
+
+    form input[type="text"]:focus,
+    form input[type="number"]:focus {
+      outline: none;
+      border-color: #3498db;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .form-row .field { flex: 1; }
+
+    .hint {
+      font-size: 0.8rem;
+      color: #888;
+      margin-top: -0.8rem;
+      margin-bottom: 1.1rem;
+    }
+
+    button[type="submit"] {
+      width: 100%;
+      padding: 0.75rem;
+      background: #3498db;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1.05rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button[type="submit"]:hover { background: #2980b9; }
+
+    /* ── Spinner ── */
+    #spinner {
+      display: none;
+      text-align: center;
+      margin-top: 1.5rem;
+      color: #555;
+    }
+
+    #spinner::after {
+      content: '';
+      display: inline-block;
+      width: 28px; height: 28px;
+      border: 3px solid #ccc;
+      border-top-color: #3498db;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-left: 0.5rem;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Messages ── */
+    .alert {
+      margin-top: 1.5rem;
+      padding: 0.85rem 1rem;
+      border-radius: 8px;
+      font-size: 0.95rem;
+    }
+
+    .alert-error {
+      background: #fdecea;
+      border: 1px solid #f5c6cb;
+      color: #c0392b;
+    }
+
+    /* ── Results ── */
+    .result-box {
+      margin-top: 1.8rem;
+    }
+
+    .result-box h2 {
+      font-size: 1.15rem;
+      color: #2c3e50;
+      margin-bottom: 1rem;
+    }
+
+    .path-list {
+      list-style: none;
+      position: relative;
+      padding-left: 1.4rem;
+    }
+
+    /* vertical connector line */
+    .path-list::before {
+      content: '';
+      position: absolute;
+      left: 0.55rem;
+      top: 0.6rem;
+      bottom: 0.6rem;
+      width: 2px;
+      background: #3498db;
+    }
+
+    .path-list li {
+      position: relative;
+      padding: 0.55rem 0 0.55rem 1.2rem;
+      font-size: 1rem;
+    }
+
+    /* circle bullet */
+    .path-list li::before {
+      content: '';
+      position: absolute;
+      left: -0.45rem;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      background: #3498db;
+      border: 2px solid #fff;
+      box-shadow: 0 0 0 2px #3498db;
+    }
+
+    .path-list li:first-child::before,
+    .path-list li:last-child::before {
+      background: #2c3e50;
+      box-shadow: 0 0 0 2px #2c3e50;
+    }
+
+    .path-list a {
+      color: #2980b9;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .path-list a:hover { text-decoration: underline; }
+
+    .badge {
+      display: inline-block;
+      background: #eaf4fd;
+      color: #2980b9;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 0.1rem 0.5rem;
+      border-radius: 20px;
+      margin-left: 0.5rem;
+      vertical-align: middle;
+    }
+
+    footer {
+      margin-top: 3rem;
+      color: #aaa;
+      font-size: 0.8rem;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🏁 WikiRace Solver</h1>
+    <p>Find the shortest link path between any two Wikipedia articles.</p>
+  </header>
+
+  <div class="card">
+    <form method="post" action="/search" id="search-form">
+      <div class="form-row">
+        <div class="field">
+          <label for="start">Start article</label>
+          <input
+            type="text"
+            id="start"
+            name="start"
+            placeholder="e.g. Albert Einstein"
+            value="{{ start or '' }}"
+            required
+          />
+        </div>
+        <div class="field">
+          <label for="end">End article</label>
+          <input
+            type="text"
+            id="end"
+            name="end"
+            placeholder="e.g. Nuclear weapon"
+            value="{{ end or '' }}"
+            required
+          />
+        </div>
+      </div>
+      <p class="hint">Enter article titles or full Wikipedia URLs.</p>
+
+      <label for="max_depth">Max hops (depth limit)</label>
+      <input
+        type="number"
+        id="max_depth"
+        name="max_depth"
+        min="1"
+        max="6"
+        value="4"
+      />
+      <p class="hint">Higher values find longer paths but take more time.</p>
+
+      <button type="submit">Find shortest path</button>
+    </form>
+
+    <div id="spinner">Searching Wikipedia…</div>
+
+    {% if error %}
+    <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+
+    {% if result %}
+    <div class="result-box">
+      <h2>
+        Shortest path found
+        <span class="badge">{{ result.hops }} hop{{ 's' if result.hops != 1 else '' }}</span>
+      </h2>
+      <ol class="path-list">
+        {% for step in result.path %}
+        <li>
+          <a href="{{ step.url }}" target="_blank" rel="noopener noreferrer">
+            {{ step.title }}
+          </a>
+        </li>
+        {% endfor %}
+      </ol>
+    </div>
+    {% endif %}
+  </div>
+
+  <footer>
+    Data sourced from the <a href="https://www.mediawiki.org/wiki/API:Main_page" target="_blank">MediaWiki API</a>.
+  </footer>
+
+  <script>
+    document.getElementById('search-form').addEventListener('submit', function () {
+      document.getElementById('spinner').style.display = 'block';
+    });
+  </script>
+</body>
+</html>

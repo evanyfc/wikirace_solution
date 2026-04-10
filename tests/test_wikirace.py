@@ -322,6 +322,7 @@ class TestFlaskApp:
         resp = client.get("/api/path?start=Bad&end=B")
         assert resp.status_code == 404
         assert "error" in resp.get_json()
+        assert "could not be found" in resp.get_json()["error"]
 
     @patch("app.find_path")
     def test_api_path_runtime_error(self, mock_fp, client):

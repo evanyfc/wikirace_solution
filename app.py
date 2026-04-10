@@ -93,8 +93,8 @@ def api_path():
 
     try:
         path = find_path(start, end, max_depth=max_depth)
-    except ValueError as exc:
-        return jsonify({"error": str(exc)}), 404
+    except ValueError:
+        return jsonify({"error": "One or more Wikipedia articles could not be found."}), 404
     except RuntimeError:
         return jsonify({"error": "An error occurred while contacting Wikipedia. Please try again later."}), 502
 

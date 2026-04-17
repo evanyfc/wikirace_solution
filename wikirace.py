@@ -12,6 +12,9 @@ import requests
 
 WIKI_API = "https://en.wikipedia.org/w/api.php"
 WIKI_BASE = "https://en.wikipedia.org/wiki/"
+REQUEST_HEADERS = {
+    "User-Agent": "WikiRaceSolver/1.0 (educational project; contact: local-dev)",
+}
 
 # How long to wait between API calls (seconds) to be polite to Wikipedia
 REQUEST_DELAY = 0.1
@@ -35,7 +38,12 @@ def _normalize_title(title: str) -> Optional[str]:
         "formatversion": "2",
     }
     try:
-        resp = requests.get(WIKI_API, params=params, timeout=15)
+        resp = requests.get(
+            WIKI_API,
+            params=params,
+            headers=REQUEST_HEADERS,
+            timeout=15,
+        )
         resp.raise_for_status()
         data = resp.json()
         pages = data.get("query", {}).get("pages", [])
@@ -45,8 +53,8 @@ def _normalize_title(title: str) -> Optional[str]:
         if page.get("missing"):
             return None
         return page["title"]
-    except requests.RequestException:
-        return None
+    except requests.RequestException as exc:
+        raise RuntimeError(f"Wikipedia API request failed: {exc}") from exc
 
 
 def _get_links(title: str) -> list[str]:
@@ -67,7 +75,12 @@ def _get_links(title: str) -> list[str]:
     }
     while True:
         try:
-            resp = requests.get(WIKI_API, params=params, timeout=15)
+            resp = requests.get(
+                WIKI_API,
+                params=params,
+                headers=REQUEST_HEADERS,
+                timeout=15,
+            )
             resp.raise_for_status()
         except requests.RequestException as exc:
             raise RuntimeError(f"Wikipedia API request failed: {exc}") from exc

@@ -79,6 +79,9 @@ class TestNormalizeTitle:
         )
         from wikirace import _normalize_title
         assert _normalize_title("Python") == "Python (programming language)"
+        _, kwargs = mock_get.call_args
+        assert "headers" in kwargs
+        assert "User-Agent" in kwargs["headers"]
 
     @patch("wikirace.requests.get")
     def test_returns_none_for_missing_article(self, mock_get):
@@ -91,11 +94,12 @@ class TestNormalizeTitle:
         assert _normalize_title("NonExistent") is None
 
     @patch("wikirace.requests.get")
-    def test_returns_none_on_network_error(self, mock_get):
+    def test_raises_runtime_error_on_network_error(self, mock_get):
         import requests as req
         mock_get.side_effect = req.RequestException("timeout")
         from wikirace import _normalize_title
-        assert _normalize_title("Anything") is None
+        with pytest.raises(RuntimeError, match="Wikipedia API request failed"):
+            _normalize_title("Anything")
 
 
 class TestGetLinks:
